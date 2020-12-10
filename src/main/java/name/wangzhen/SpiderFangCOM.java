@@ -4,12 +4,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.jsoup.select.Evaluator;
 
 import java.io.*;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class SpiderFangCOM {
 
@@ -19,11 +18,15 @@ public class SpiderFangCOM {
     Map<String, String[]> letterMap = new HashMap<>();
     Map<String, String[]> provinceMap = new HashMap<>();
     Map<String, String[]> mergeMap = new HashMap<>();
+    Stream<String[]> citiesSortList=null;
 
-    public void init() throws Exception {
+    SpiderFangCOM(){
         classPath = ClassLoader.getSystemResource("").getPath();
         savePath=classPath+"save";
         new File(savePath).mkdir();
+    }
+
+    public void init() throws Exception {
 
         doc = Jsoup.connect("https://zu.fang.com/cities.aspx").get();
         String bodyHtml = doc.body().html();
@@ -107,8 +110,6 @@ public class SpiderFangCOM {
         mergeSet.addAll(letterSet);
         mergeSet.addAll(provinceSet);
 
-        mergeSet.remove("台湾");
-
         StringBuffer mergeCsv = new StringBuffer();
         for(String cityName:mergeSet){
             String[] letterValue = letterMap.get(cityName);
@@ -139,15 +140,23 @@ public class SpiderFangCOM {
         System.out.println("保存合并字母和省份分城市列表文件");
     }
 
-    public void crawlCity() throws Exception {
+    public void crawlCityPageCount() throws Exception {
         Map<String, String[]> tmpMap = new HashMap<>();
         tmpMap.putAll(mergeMap);
         mergeMap.clear();
+
+        File f = new File(savePath+"/CityPageCount.csv");
+        FileOutputStream fop = new FileOutputStream(f);
+        OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
+
         int i=1;
         for (Map.Entry<String, String[]> Entry:tmpMap.entrySet()){
             String key = Entry.getKey();
             String[] value = Entry.getValue();
             System.out.print("进度:"+i+"/"+tmpMap.size()+" "+key+" ");
+            writer.append(key+",");
+            writer.flush();
+
             i++;
 
             String url="";
@@ -158,19 +167,79 @@ public class SpiderFangCOM {
             }
 
             doc=null;
-            try {
-                doc = Jsoup.connect("https:"+url).get();
-                Element pageCountEle = doc.selectFirst("span.txt");
-                String pageCountStr = pageCountEle.text();
-                String pageCount = Pattern.compile("[^0-9]").matcher(pageCountStr).replaceAll("");
-                //ArrayList<String> cityValue = new ArrayList(Collections.singleton(value));
-                //cityValue.add(pageCount);
-                //mergeMap.put(key, (String[]) cityValue.toArray());
-                System.out.println("共"+pageCount+"页");
-            } catch (Exception e){
-                e.printStackTrace();
+            int j=1;
+            while (doc==null&&j<5){
+                j++;
+                try {
+                    doc = Jsoup.connect("https:"+url).get();
+                    Element pageCountEle = doc.selectFirst("span.txt");
+                    String pageCountStr = pageCountEle.text();
+                    String pageCount = Pattern.compile("[^0-9]").matcher(pageCountStr).replaceAll("");
+                    ArrayList<String> cityValue = new ArrayList();
+                    Collections.addAll(cityValue, value);
+                    //ArrayList<String> cityValue = new ArrayList(Collections.singleton(value));
+                    cityValue.add(pageCount);
+                    String[] cityArr = new String[cityValue.size()];
+                    cityValue.toArray(cityArr);
+                    mergeMap.put(key, cityArr );
+                    writer.append(pageCount);
+                    System.out.print("共"+pageCount+"页");
+                } catch (Exception e){
+                    doc=null;
+                }
             }
+            System.out.println();
+            writer.append("\n");
+            writer.flush();
+
         }
+
+        writer.close();
+        fop.close();
+    }
+
+    public void sortCityPage() throws Exception {
+        Reader in = new InputStreamReader(new FileInputStream(savePath+"/CityPageCount.csv"),"UTF-8");
+        byte[] bytes = new byte[1024];
+        int len = -1;
+        StringBuffer sb = new StringBuffer();
+        while ((len = in.read()) != -1) {
+            sb.append((char)len);
+        }
+        in.close();
+
+        String[] citiesPageCount = sb.toString().split("\n");
+        ArrayList<String[]> citiesList = new ArrayList<>();
+        for (String cityPageCount:citiesPageCount){
+            String[] cityItem = cityPageCount.split(",");
+            citiesList.add(cityItem);
+        }
+        citiesSortList = citiesList.stream().sorted((x, y) -> {
+            int a=0;
+            if(x.length>=2){
+                a = Integer.valueOf(String.valueOf(x[1]));
+            }
+
+            int b = 0;
+            if (y.length>=2){
+                b=Integer.valueOf(String.valueOf(y[1]));
+            }
+
+            return b - a;
+        });
+    }
+
+    public void crawlCityPage() throws Exception {
+        citiesSortList.forEach(s->{
+            if(s.length>=2){
+                String cityName = s[0];
+                System.out.println(cityName);
+                String[] cityValue = mergeMap.get(cityName);
+                System.out.println(cityValue[1]);
+            }
+        });
+
+
     }
 
     public static void main(String[] args) throws Exception {
@@ -187,6 +256,9 @@ public class SpiderFangCOM {
         //合并字母和省份分城市列表
         spiderFangCOM.mergeCitiesMap();
 
-        spiderFangCOM.crawlCity();
+        //spiderFangCOM.crawlCityPageCount();
+
+        spiderFangCOM.sortCityPage();
+        spiderFangCOM.crawlCityPage();
     }
 }
