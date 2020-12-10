@@ -229,14 +229,75 @@ public class SpiderFangCOM {
         });
     }
 
+    public void crawlCityPageNum(String cityName, int pageNum){
+        String[] cityValue = mergeMap.get(cityName);
+
+        String url="";
+        if(!cityValue[1].equals("")){
+            url= cityValue[1];
+        }else if(!cityValue[3].equals("")){
+            url= cityValue[3];
+        }
+        try {
+            doc = Jsoup.connect("https:"+url+"house/i3"+pageNum+"/?rfss=1-28051d9280b13a8759-3b").get();
+            Element houseTableEle = doc.body().getElementsByClass("houseList").first();
+            Elements houseListEle = houseTableEle.getElementsByTag("dl");
+            for (Element houseEle:houseListEle){
+                Element houseInfoEle = houseEle.getElementsByTag("dd").first();
+                String detailsUrl = houseInfoEle.child(0).getElementsByTag("a").first().attr("href");
+                String title = houseInfoEle.child(0).text();
+                String[] houseInfo = houseInfoEle.child(1).text().split("\\|");
+                String mode = "";if(houseInfo.length>=1){mode=houseInfo[0];}
+                String houseType = "";if(houseInfo.length>=2){houseType=houseInfo[1];}
+                String areaSize = "";if(houseInfo.length>=3){areaSize=houseInfo[2];}
+                String orientation = "";if(houseInfo.length>=4){orientation=houseInfo[3];}
+                Elements busInfoEle = houseInfoEle.child(2).getElementsByTag("a");
+
+                String startBusStation = "";if(busInfoEle.size()>=1){startBusStation=busInfoEle.get(0).text();}
+                String startBusStationUrl = "";if(busInfoEle.size()>=1){startBusStationUrl=busInfoEle.get(0).attr("href");}
+                String endBusStation = "";if(busInfoEle.size()>=2){endBusStation=busInfoEle.get(1).text();}
+                String endBusStationUrl = "";if(busInfoEle.size()>=2){endBusStationUrl=busInfoEle.get(1).attr("href");}
+                String busStation = "";if(busInfoEle.size()>=3){busStation=busInfoEle.get(2).text();}
+                String busStationUrl = "";if(busInfoEle.size()>=3){busStationUrl=busInfoEle.get(2).attr("href");}
+                Element subwayInfoEle = houseInfoEle.child(3);
+                String subwayInfo = "";
+                String subwayName = "";
+                String subwayUrl = "";
+                if (subwayInfoEle.hasText()){
+                    subwayInfo = houseInfoEle.child(3)
+                            .getElementsByTag("span")
+                            .first()
+                            .text();
+                    Element subwayEle = houseInfoEle.child(3).getElementsByTag("span").first().getElementsByTag("a").first();
+                    subwayName = subwayEle.text();
+                    subwayUrl = subwayEle.attr("href");
+                }
+
+
+                String price = houseInfoEle.child(6).text();
+                System.out.println(title+","+detailsUrl+","+mode+","+houseType+","+areaSize+","+orientation
+                        +","+startBusStation+","+startBusStationUrl+","+endBusStation+","+endBusStationUrl+","+busStation+","+busStationUrl
+                        +","+subwayName+","+subwayUrl+","+subwayInfo
+                        +","+price);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     public void crawlCityPage() throws Exception {
         citiesSortList.forEach(s->{
-            if(s.length>=2){
-                String cityName = s[0];
-                System.out.println(cityName);
-                String[] cityValue = mergeMap.get(cityName);
-                System.out.println(cityValue[1]);
+            if(s.length<2){
+                return;
             }
+            String cityName = s[0];
+
+            Integer cityPageCount = Integer.valueOf(s[1]);
+            for (int i=1;i<=cityPageCount;i++){
+                this.crawlCityPageNum(cityName,i);
+                try { Thread.sleep(10*1000); } catch (InterruptedException e) { e.printStackTrace(); }
+            }
+
         });
 
 
