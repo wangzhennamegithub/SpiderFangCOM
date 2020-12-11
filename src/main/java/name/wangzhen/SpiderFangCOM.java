@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.*;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -23,8 +24,16 @@ public class SpiderFangCOM {
     List<String[]> citiesSortList=new ArrayList<>();
 
     SpiderFangCOM(){
-        classPath = ClassLoader.getSystemResource("").getPath();
-        savePath=classPath+"save";
+        URL resUrl = ClassLoader.getSystemResource("");
+        if(resUrl==null){
+            savePath="save";
+        }else{
+            classPath=resUrl.getPath();
+            savePath=classPath+"save";
+        }
+
+        System.out.println(savePath);
+
         new File(savePath).mkdir();
     }
 
