@@ -324,7 +324,7 @@ public class SpiderFangCOM {
         //合并字母和省份分城市列表
         spiderFangCOM.mergeCitiesMap();
 
-        //spiderFangCOM.crawlCityPageCount();
+        spiderFangCOM.crawlCityPageCount();
 
         spiderFangCOM.sortCityPage();
         spiderFangCOM.crawlCityPage();
