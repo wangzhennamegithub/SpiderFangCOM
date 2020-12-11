@@ -7,7 +7,9 @@ import org.jsoup.select.Elements;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SpiderFangCOM {
@@ -18,7 +20,7 @@ public class SpiderFangCOM {
     Map<String, String[]> letterMap = new HashMap<>();
     Map<String, String[]> provinceMap = new HashMap<>();
     Map<String, String[]> mergeMap = new HashMap<>();
-    Stream<String[]> citiesSortList=null;
+    List<String[]> citiesSortList=new ArrayList<>();
 
     SpiderFangCOM(){
         classPath = ClassLoader.getSystemResource("").getPath();
@@ -214,19 +216,20 @@ public class SpiderFangCOM {
             String[] cityItem = cityPageCount.split(",");
             citiesList.add(cityItem);
         }
-        citiesSortList = citiesList.stream().sorted((x, y) -> {
-            int a=0;
-            if(x.length>=2){
+        List<String[]> citiesSortTmpList = citiesList.stream().sorted((x, y) -> {
+            int a = 0;
+            if (x.length >= 2) {
                 a = Integer.valueOf(String.valueOf(x[1]));
             }
 
             int b = 0;
-            if (y.length>=2){
-                b=Integer.valueOf(String.valueOf(y[1]));
+            if (y.length >= 2) {
+                b = Integer.valueOf(String.valueOf(y[1]));
             }
 
             return b - a;
-        });
+        }).collect(Collectors.toList());
+        citiesSortList.addAll(citiesSortTmpList);
     }
 
     public void crawlCityPageNum(String cityName, int pageNum){
@@ -275,7 +278,7 @@ public class SpiderFangCOM {
 
 
                 String price = houseInfoEle.child(6).text();
-                System.out.println(title+","+detailsUrl+","+mode+","+houseType+","+areaSize+","+orientation
+                System.out.println(cityName+","+title+","+detailsUrl+","+mode+","+houseType+","+areaSize+","+orientation
                         +","+startBusStation+","+startBusStationUrl+","+endBusStation+","+endBusStationUrl+","+busStation+","+busStationUrl
                         +","+subwayName+","+subwayUrl+","+subwayInfo
                         +","+price);
@@ -286,19 +289,23 @@ public class SpiderFangCOM {
     }
 
     public void crawlCityPage() throws Exception {
-        citiesSortList.forEach(s->{
-            if(s.length<2){
-                return;
+        long cityCount = citiesSortList.size();
+        int j=1;
+        for (String[] city:citiesSortList){
+            if(city.length<2){
+                continue;
             }
-            String cityName = s[0];
+            String cityName = city[0];
 
-            Integer cityPageCount = Integer.valueOf(s[1]);
+            Integer cityPageCount = Integer.valueOf(city[1]);
             for (int i=1;i<=cityPageCount;i++){
                 this.crawlCityPageNum(cityName,i);
+                System.out.println(j+"/"+cityCount+" "+i+"/"+cityPageCount);
                 try { Thread.sleep(10*1000); } catch (InterruptedException e) { e.printStackTrace(); }
             }
 
-        });
+            j++;
+        }
 
 
     }
