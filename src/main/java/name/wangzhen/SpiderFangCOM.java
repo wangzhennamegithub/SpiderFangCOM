@@ -32,8 +32,6 @@ public class SpiderFangCOM {
             savePath=classPath+"save";
         }
 
-        System.out.println(savePath);
-
         new File(savePath).mkdir();
     }
 
@@ -241,7 +239,7 @@ public class SpiderFangCOM {
         citiesSortList.addAll(citiesSortTmpList);
     }
 
-    public void crawlCityPageNum(String cityName, int pageNum){
+    public void crawlCityPageNum(String cityName, int pageNum) throws Exception {
         String[] cityValue = mergeMap.get(cityName);
 
         String url="";
@@ -250,6 +248,11 @@ public class SpiderFangCOM {
         }else if(!cityValue[3].equals("")){
             url= cityValue[3];
         }
+
+        File f = new File(savePath+"/CityPageNum.csv");
+        FileOutputStream fop = new FileOutputStream(f,true);
+        OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
+
         try {
             doc = Jsoup.connect("https:"+url+"house/i3"+pageNum+"/?rfss=1-28051d9280b13a8759-3b").get();
             Element houseTableEle = doc.body().getElementsByClass("houseList").first();
@@ -287,14 +290,18 @@ public class SpiderFangCOM {
 
 
                 String price = houseInfoEle.child(6).text();
-                System.out.println(cityName+","+title+","+detailsUrl+","+mode+","+houseType+","+areaSize+","+orientation
-                        +","+startBusStation+","+startBusStationUrl+","+endBusStation+","+endBusStationUrl+","+busStation+","+busStationUrl
-                        +","+subwayName+","+subwayUrl+","+subwayInfo
-                        +","+price);
+                String writerStr = cityName + "\t" + title + "\t" + detailsUrl + "\t" + mode + "\t" + houseType + "\t" + areaSize + "\t" + orientation
+                        + "\t" + startBusStation + "\t" + startBusStationUrl + "\t" + endBusStation + "\t" + endBusStationUrl + "\t" + busStation + "\t" + busStationUrl
+                        + "\t" + subwayName + "\t" + subwayUrl + "\t" + subwayInfo
+                        + "\t" + price;
+                System.out.println(writerStr);
+                writer.append(writerStr+"\n");
             }
         } catch (Exception e){
             e.printStackTrace();
         }
+        writer.close();
+        fop.close();
     }
 
     public void crawlCityPage() throws Exception {
