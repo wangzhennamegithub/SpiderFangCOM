@@ -162,7 +162,7 @@ public class SpiderFangCOM {
         for (Map.Entry<String, String[]> Entry:tmpMap.entrySet()){
             String key = Entry.getKey();
             String[] value = Entry.getValue();
-            System.out.print("进度:"+i+"/"+tmpMap.size()+" "+key+" ");
+            System.out.print("按城市抓取,进度:"+i+"/"+tmpMap.size()+" "+key+" ");
             writer.append(key+",");
             writer.flush();
 
@@ -294,7 +294,7 @@ public class SpiderFangCOM {
                         + "\t" + startBusStation + "\t" + startBusStationUrl + "\t" + endBusStation + "\t" + endBusStationUrl + "\t" + busStation + "\t" + busStationUrl
                         + "\t" + subwayName + "\t" + subwayUrl + "\t" + subwayInfo
                         + "\t" + price;
-                System.out.println(writerStr);
+                //System.out.println(writerStr);
                 writer.append(writerStr+"\n");
             }
         } catch (Exception e){
@@ -316,7 +316,7 @@ public class SpiderFangCOM {
             Integer cityPageCount = Integer.valueOf(city[1]);
             for (int i=1;i<=cityPageCount;i++){
                 this.crawlCityPageNum(cityName,i);
-                System.out.println(j+"/"+cityCount+" "+i+"/"+cityPageCount);
+                System.out.println("按页数抓取,进度:"+j+"/"+cityCount+" "+i+"/"+cityPageCount);
                 try { Thread.sleep(10*1000); } catch (InterruptedException e) { e.printStackTrace(); }
             }
 
