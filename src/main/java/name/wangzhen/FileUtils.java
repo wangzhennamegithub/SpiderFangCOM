@@ -53,7 +53,7 @@ public class FileUtils {
             }
             in.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("无法读取文件"+fileName);
         }
         return sb.toString();
     }

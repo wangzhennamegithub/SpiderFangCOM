@@ -1,5 +1,9 @@
 package name.wangzhen;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,6 +16,7 @@ import java.util.stream.Collectors;
 
 public class SpiderFangCOM {
 
+    static Logger logger = LogManager.getLogger(LogManager.ROOT_LOGGER_NAME);
     Map<String, String[]> citiesMap = new HashMap<>();
     List<String[]> citiesSortList=new ArrayList<>();
 
@@ -26,10 +31,6 @@ public class SpiderFangCOM {
 
         Document cityDoc = Jsoup.connect("https://zu.fang.com/cities.aspx").get();
         String cityHtml = cityDoc.body().html();
-
-        //FileUtils.saveFile("cities.html",bodyHtml);
-        //System.out.println("保存html文件");
-        //TaskMap.setTaskStatus("HomeTask",true);
 
         return cityHtml;
     }
@@ -122,10 +123,10 @@ public class SpiderFangCOM {
             citiesCsv.append(cityName+","+letter+","+letterUrl+","+province+","+provinceUrl+"\n");
         }
         FileUtils.saveFile("Cities.csv",citiesCsv.toString());
-        System.out.println("保存城市列表文件");
+        logger.info("保存城市列表文件");
     }
 
-    public void crawlCityPageCount() throws Exception {
+    public void crawlCity() throws Exception {
         String cityPageCountStr = FileUtils.getFile(cityPageCountFileName);
         String[] citiesPageCount = cityPageCountStr.toString().split("\n");
         ArrayList<String[]> citiesList = new ArrayList<>();
@@ -146,6 +147,12 @@ public class SpiderFangCOM {
         File f = new File(savePath+"/"+cityPageCountFileName);
         FileOutputStream fop = new FileOutputStream(f,true);
         OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
+
+        File areaf = new File(savePath+"/"+"CityArea.csv");
+        FileOutputStream areafop = new FileOutputStream(areaf,true);
+        OutputStreamWriter areaWriter = new OutputStreamWriter(areafop, "UTF-8");
+
+
 
         int i=1;
         for (Map.Entry<String, String[]> city:citiesTmpMap.entrySet()){
@@ -169,22 +176,32 @@ public class SpiderFangCOM {
                     Element pageCountEle = doc.selectFirst("span.txt");
                     String pageCountStr = pageCountEle.text();
                     pageCount = Pattern.compile("[^0-9]").matcher(pageCountStr).replaceAll("");
+                    Elements areaEles = doc.getElementById("rentid_D04_01").getElementsByTag("a");
+                    for (Element areaEle:areaEles){
+                        if(areaEle.text().endsWith("不限")) continue;
+                        logger.debug(cityName+","+areaEle.text()+","+areaEle.attr("href"));
+                        areaWriter.write(cityName+","+areaEle.text()+","+areaEle.attr("href")+"\n");
+                    }
                 } catch (Exception e){
                     doc=null;
                 }
             }
             writer.append(cityName+","+pageCount+"\n");
             writer.flush();
-            System.out.println("按城市抓取页数,进度:"+i+"/"+citiesMapCount+" "+cityName+" 共"+pageCount+"页");
+
+            areaWriter.flush();
+            logger.info("按城市抓取页数,进度:"+i+"/"+citiesMapCount+" "+cityName);
             i++;
         }
 
         writer.close();
         fop.close();
+
+        areaWriter.close();
+        areafop.close();
     }
 
     public void sortCityPage() throws Exception {
-        String savePath=FileUtils.getSavePath();
         String cityPageCountStr = FileUtils.getFile(cityPageCountFileName);
 
         String[] citiesPageCount = cityPageCountStr.toString().split("\n");
@@ -222,9 +239,12 @@ public class SpiderFangCOM {
         }
 
         String savePath = FileUtils.getSavePath();
-        File f = new File(savePath+"/CityPageNum.csv");
-        FileOutputStream fop = new FileOutputStream(f,true);
-        OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
+        //File f = new File(savePath+"/CityPageNum.csv");
+        //FileOutputStream fop = new FileOutputStream(f,true);
+        //OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
+
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",true),"GBK"),1024);
+        CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
 
         try {
             Document doc = Jsoup.connect("https:" + url + "house/i3" + pageNum + "/?rfss=1-28051d9280b13a8759-3b").get();
@@ -239,14 +259,14 @@ public class SpiderFangCOM {
                 String houseType = "";if(houseInfo.length>=2){houseType=houseInfo[1];}
                 String areaSize = "";if(houseInfo.length>=3){areaSize=houseInfo[2];}
                 String orientation = "";if(houseInfo.length>=4){orientation=houseInfo[3];}
-                Elements busInfoEle = houseInfoEle.child(2).getElementsByTag("a");
+                Elements areaInfoEle = houseInfoEle.child(2).getElementsByTag("a");
 
-                String startBusStation = "";if(busInfoEle.size()>=1){startBusStation=busInfoEle.get(0).text();}
-                String startBusStationUrl = "";if(busInfoEle.size()>=1){startBusStationUrl=busInfoEle.get(0).attr("href");}
-                String endBusStation = "";if(busInfoEle.size()>=2){endBusStation=busInfoEle.get(1).text();}
-                String endBusStationUrl = "";if(busInfoEle.size()>=2){endBusStationUrl=busInfoEle.get(1).attr("href");}
-                String busStation = "";if(busInfoEle.size()>=3){busStation=busInfoEle.get(2).text();}
-                String busStationUrl = "";if(busInfoEle.size()>=3){busStationUrl=busInfoEle.get(2).attr("href");}
+                String areaName = "";if(areaInfoEle.size()>=1){areaName=areaInfoEle.get(0).text();}
+                String areaUrl = "";if(areaInfoEle.size()>=1){areaUrl=areaInfoEle.get(0).attr("href");}
+                String subAreaName = "";if(areaInfoEle.size()>=2){subAreaName=areaInfoEle.get(1).text();}
+                String subAreaUrl = "";if(areaInfoEle.size()>=2){subAreaUrl=areaInfoEle.get(1).attr("href");}
+                String propertiesName = "";if(areaInfoEle.size()>=3){propertiesName=areaInfoEle.get(2).text();}
+                String propertiesUrl = "";if(areaInfoEle.size()>=3){propertiesUrl=areaInfoEle.get(2).attr("href");}
                 Element subwayInfoEle = houseInfoEle.child(3);
                 String subwayInfo = "";
                 String subwayName = "";
@@ -263,18 +283,24 @@ public class SpiderFangCOM {
 
 
                 String price = houseInfoEle.child(6).text();
-                String writerStr = cityName + "\t" + title + "\t" + detailsUrl + "\t" + mode + "\t" + houseType + "\t" + areaSize + "\t" + orientation
-                        + "\t" + startBusStation + "\t" + startBusStationUrl + "\t" + endBusStation + "\t" + endBusStationUrl + "\t" + busStation + "\t" + busStationUrl
-                        + "\t" + subwayName + "\t" + subwayUrl + "\t" + subwayInfo
-                        + "\t" + price;
+                //String writerStr = cityName + "\t" + title + "\t" + detailsUrl + "\t" + mode + "\t" + houseType + "\t" + areaSize + "\t" + orientation
+                //        + "\t" + areaName + "\t" + areaUrl + "\t" + subAreaName + "\t" + subAreaUrl + "\t" + propertiesName + "\t" + propertiesUrl
+                //        + "\t" + subwayName + "\t" + subwayUrl + "\t" + subwayInfo
+                //        + "\t" + price;
                 //System.out.println(writerStr);
-                writer.append(writerStr+"\n");
+                //writer.append(writerStr+"\n");
+
+                printer.printRecord(cityName, title, detailsUrl, mode, houseType,areaSize,orientation,
+                        areaName,areaUrl,subAreaName,subAreaUrl,propertiesName,propertiesUrl,
+                        subwayName,subwayUrl,subwayInfo,price);
+                printer.flush();
             }
         } catch (Exception e){
             e.printStackTrace();
         }
-        writer.close();
-        fop.close();
+        printer.close();
+        //writer.close();
+        //fop.close();
     }
 
     public void crawlCityPage() throws Exception {
@@ -286,6 +312,15 @@ public class SpiderFangCOM {
             sumPageNum+=cityPageCount;
         }
 
+        String savePath = FileUtils.getSavePath();
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",false),"GBK"),1024);
+        CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
+        printer.printRecord("cityName", "title", "detailsUrl", "mode", "houseType","areaSize","orientation",
+                "areaName","areaUrl","subAreaName","subAreaUrl","propertiesName","propertiesUrl",
+                "subwayName","subwayUrl","subwayInfo","price");
+        printer.flush();
+        printer.close();
+
         int j=1;
         for (String[] city:citiesSortList){
 
@@ -294,7 +329,7 @@ public class SpiderFangCOM {
             Integer cityPageCount = Integer.valueOf(city[1]);
             for (int i=1;i<=cityPageCount;i++){
                 this.crawlCityPageNum(cityName,i);
-                System.out.println("按页数抓取,进度:"+j+"/"+sumPageNum);
+                logger.info("按页数抓取,进度:"+j+"/"+sumPageNum);
                 j++;
                 try { Thread.sleep(10*1000); } catch (InterruptedException e) { e.printStackTrace(); }
             }
@@ -306,16 +341,20 @@ public class SpiderFangCOM {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println("程序启动");
+
+        logger.info("程序启动");
 
         SpiderFangCOM spiderFangCOM=new SpiderFangCOM();
 
         //合并字母和省份分城市列表
         spiderFangCOM.crawlCitiesUrlMap();
 
-        spiderFangCOM.crawlCityPageCount();
+        spiderFangCOM.crawlCity();
 
         spiderFangCOM.sortCityPage();
         spiderFangCOM.crawlCityPage();
     }
+
+
+
 }
