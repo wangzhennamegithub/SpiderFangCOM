@@ -243,7 +243,7 @@ public class SpiderFangCOM {
         //FileOutputStream fop = new FileOutputStream(f,true);
         //OutputStreamWriter writer = new OutputStreamWriter(fop, "UTF-8");
 
-        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",true),"GBK"),1024);
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",true),"UTF-8"),1024);
         CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
 
         try {
@@ -306,7 +306,7 @@ public class SpiderFangCOM {
     public void crawlCityPage() throws Exception {
 
         String savePath = FileUtils.getSavePath();
-        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",false),"GBK"),1024);
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",false),"UTF-8"),1024);
         CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
         printer.printRecord("cityName", "title", "detailsUrl", "mode", "houseType","areaSize","orientation",
                 "areaName","areaUrl","subAreaName","subAreaUrl","propertiesName","propertiesUrl",
