@@ -305,13 +305,6 @@ public class SpiderFangCOM {
 
     public void crawlCityPage() throws Exception {
 
-
-        int sumPageNum = 0;
-        for (String[] city:citiesSortList){
-            Integer cityPageCount = Integer.valueOf(city[1]);
-            sumPageNum+=cityPageCount;
-        }
-
         String savePath = FileUtils.getSavePath();
         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(savePath+"/CityPageNum.csv",false),"GBK"),1024);
         CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
@@ -321,11 +314,15 @@ public class SpiderFangCOM {
         printer.flush();
         printer.close();
 
+        int sumPageNum = 0;
+        for (String[] city:citiesSortList){
+            Integer cityPageCount = Integer.valueOf(city[1]);
+            sumPageNum+=cityPageCount;
+        }
+
         int j=1;
         for (String[] city:citiesSortList){
-
             String cityName = city[0];
-
             Integer cityPageCount = Integer.valueOf(city[1]);
             for (int i=1;i<=cityPageCount;i++){
                 this.crawlCityPageNum(cityName,i);
@@ -334,7 +331,6 @@ public class SpiderFangCOM {
                 try { Thread.sleep(10*1000); } catch (InterruptedException e) { e.printStackTrace(); }
             }
 
-            j++;
         }
 
 
@@ -353,6 +349,7 @@ public class SpiderFangCOM {
 
         spiderFangCOM.sortCityPage();
         spiderFangCOM.crawlCityPage();
+        logger.info("运行完成");
     }
 
 
